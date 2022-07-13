@@ -12,41 +12,57 @@ const BookDetails = (props) => {
     const { id } = useParams();
     const [book, setBook] = useState([]);
     const [characters, setCharacters] = useState([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [charactersRange, setCharactersRange] = useState({});
+    const [isLoaded, setIsLoaded] = useState({
+        book: false,
+        characters: false
+    });
 
     useEffect(() => {
-       fetchBook()
+       fetchBook()   
     }, [])
+
+    useEffect(() => {
+        fetchCharacters()   
+     }, [book])
 
     
     /** Fetch and format a book from the API */
     const fetchBook = async () => {
         try {
-            const formatedBook = await getBook(id);
+                const formatedBook = await getBook(id);
+                formatedBook.released = formatDate(formatedBook.released)
 
-            formatedBook.released = formatDate(formatedBook.released)
+                setBook(formatedBook)
+                setIsLoaded(prevState => ({...prevState, book: true}))
+            } catch (error) {
+                console.log(error)
+            }
+        }
 
-            /** Fetch characters */
+    /** Fetch characters from the  API */
+    const fetchCharacters = async (start=0, end=25) => {
+        try {
             const characterData = []
-            for (let i=0; i<formatedBook.characters.length; i++) {
-                const characterId = formatedBook.characters[i].split('/').pop()
-                formatedBook.characters[i] = characterId
-
+            for (let i=start; i<end; i++) {
+                const characterId = book.characters[i].split('/').pop()
+                book.characters[i] = characterId
                 characterData.push(await getCharacter(characterId)) 
-                
             }
 
             setCharacters(characterData)
-            setBook(formatedBook)
-            setIsLoaded(true)
+            setCharactersRange({start: start, end: end + 25})
+            setIsLoaded(prevState => ({...prevState, characters: true}))
         } catch (error) {
             console.log(error)
         }
-      }
+
+        
+    }
 
     return (
         <div>
-            {!isLoaded
+            {!isLoaded.book || !isLoaded.characters
             ?
                 <Loader />
             : (
@@ -78,6 +94,14 @@ const BookDetails = (props) => {
                             {characters.map((character) => (
                                 <CharacterListItem id={character.id} name={character.name} titles={character.titles} key={character.id} />
                             ))}
+                            {book.characters.length > charactersRange.end 
+                            ? (
+                                <div className="load-more">
+                                    <button onClick={() => fetchCharacters(charactersRange.start, charactersRange.end)} className="btn btn-primary">Load More</button>
+                                </div>
+                            )
+                            : ""
+                            }
                         </div>
                         
                     </div>
