@@ -41,23 +41,19 @@ const BookDetails = (props) => {
         }
 
     /** Fetch characters from the  API */
-    const fetchCharacters = async (start=0, end=25) => {
+    const fetchCharacters = async (start=0, end=19) => {
         try {
-            const characterData = []
-            for (let i=start; i<end; i++) {
-                const characterId = book.characters[i].split('/').pop()
-                book.characters[i] = characterId
-                characterData.push(await getCharacter(characterId)) 
-            }
+            const promises = book.characters.slice(start,end).map((character) => getCharacter(character.split('/').pop()))
 
-            setCharacters(characterData)
-            setCharactersRange({start: start, end: end + 25})
+            Promise.all(promises).then((response) => {
+                setCharacters([...characters].concat(response))
+            })
+ 
+            setCharactersRange({start: end + 1, end: end + 19})
             setIsLoaded(prevState => ({...prevState, characters: true}))
         } catch (error) {
             console.log(error)
         }
-
-        
     }
 
     return (
